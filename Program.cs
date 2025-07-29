@@ -19,6 +19,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Register HTTP client
+builder.Services.AddHttpClient("ServiceAPI", client =>
+{
+    client.BaseAddress = new Uri("https://your-api-endpoint/");
+    // Add any headers, auth, etc. as needed
+});
+
+// Register repositories
+builder.Services.AddScoped<GoBest.Companies.CompanyRepository>();
+builder.Services.AddScoped<GoBest.Stations.StationRepository>();
+builder.Services.AddScoped<GoBest.Services.ServiceRepository>();
+
+// Register services
+builder.Services.AddScoped<GoBest.Services.RouteFinderService>();
+builder.Services.AddHostedService<GoBest.Services.ServiceApiService>();
+
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
 

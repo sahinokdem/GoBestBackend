@@ -54,6 +54,37 @@ namespace GoBest.Companies
 
             return company.Id;
         }
-         
+        
+        public async Task<Company?> GetCompanyByIataCodeAsync(string iataCode)
+        {
+            if (string.IsNullOrEmpty(iataCode)) return null;
+            
+            return await _db.Companies
+                .Where(c => c.IataCode == iataCode)
+                .FirstOrDefaultAsync();
+        }
+        
+        public async Task<Company> SaveCompanyFromApiAsync(Routes.DTO.CompanyAPIDto companyDto)
+        {
+            var company = await _db.Companies
+                .Where(c => (c.Name == companyDto.Name && c.CountryCode == companyDto.Country_Code) || 
+                           (!string.IsNullOrEmpty(companyDto.Iata_Code) && c.IataCode == companyDto.Iata_Code))
+                .FirstOrDefaultAsync();
+                
+            if (company == null)
+            {
+                company = new Company
+                {
+                    Name = companyDto.Name,
+                    IataCode = companyDto.Iata_Code,
+                    CountryCode = companyDto.Country_Code
+                };
+                
+                _db.Companies.Add(company);
+                await _db.SaveChangesAsync();
+            }
+            
+            return company;
+        }
     }
 }
