@@ -1,4 +1,4 @@
-namespace GoBest.Auth
+namespace GoBest.Users
 {
     public enum UserRole
     {

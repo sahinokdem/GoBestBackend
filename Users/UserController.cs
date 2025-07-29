@@ -1,7 +1,7 @@
 using GoBest.Data;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Controllers
+namespace GoBest.Users
 {
     public class UsersController : ControllerBase
     {

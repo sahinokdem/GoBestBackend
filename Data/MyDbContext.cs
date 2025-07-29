@@ -134,8 +134,8 @@ public partial class MyDbContext : DbContext
                 .HasMaxLength(3)
                 .HasColumnName("iata_code");
             entity.Property(e => e.Mode)
-                .HasMaxLength(10)
-                .HasColumnName("mode");
+                .HasColumnName("mode")
+                .HasConversion<int>();
             entity.Property(e => e.Name)
                 .HasMaxLength(128)
                 .HasColumnName("name");

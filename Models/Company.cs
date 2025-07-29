@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using GoBest.Companies;
 
 namespace GoBest.Models;
 
@@ -9,7 +10,7 @@ public partial class Company
 
     public string Name { get; set; } = null!;
 
-    public string? Mode { get; set; }
+    public CompanyMode Mode { get; set; }
 
     public string CountryCode { get; set; } = null!;
 

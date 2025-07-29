@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using GoBest.Auth;
+using GoBest.Users;
 
 namespace GoBest.Models;
 
