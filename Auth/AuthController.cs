@@ -17,7 +17,7 @@ namespace GoBest.Auth
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            var result = await _authService.RegisterAsync(request.FullName, request.Email, request.Password);
+            var result = await _authService.RegisterAsync(request);
             if (result == null)
                 return BadRequest("Email already exists");
 
