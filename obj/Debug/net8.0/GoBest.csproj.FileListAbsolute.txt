@@ -142,3 +142,4 @@
 /home/sahin/Desktop/GoBest/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 /home/sahin/Desktop/GoBest/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /home/sahin/Desktop/GoBest/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
+/home/sahin/Desktop/GoBest/obj/Debug/net8.0/GoBest.sourcelink.json
