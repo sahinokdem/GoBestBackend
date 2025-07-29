@@ -1,6 +1,8 @@
 using GoBest.Auth.DTO;
 using GoBest.Data;
+using GoBest.Exceptions;
 using GoBest.Models;
+using GoBest.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -20,10 +22,10 @@ namespace GoBest.Auth
             _config = config;
         }
 
-        public async Task<AuthResponse?> RegisterAsync(string fullName, string email, string password)
+        public async Task<AuthResponse> RegisterAsync(string fullName, string email, string password)
         {
             if (await _context.Users.AnyAsync(u => u.Email == email))
-                return null;
+                throw BusinessException.EmailAlreadyExists(); // ✅ null yerine exception
 
             var user = new User
             {
@@ -40,12 +42,11 @@ namespace GoBest.Auth
             return AuthMapper.ToResponse(user, GenerateJwtToken(user));
         }
 
-
-        public async Task<AuthResponse?> LoginAsync(string email, string password)
+        public async Task<AuthResponse> LoginAsync(string email, string password)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-                return null;
+                throw BusinessException.InvalidCredentials(); // ✅ null yerine exception
 
             return AuthMapper.ToResponse(user, GenerateJwtToken(user));
         }
