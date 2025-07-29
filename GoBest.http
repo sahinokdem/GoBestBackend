@@ -1,0 +1,6 @@
+@GoBest_HostAddress = http://localhost:5293
+
+GET {{GoBest_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
