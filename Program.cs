@@ -3,6 +3,7 @@ using GoBest.Data;
 using GoBest.Auth;
 using GoBest.Util;
 using System.Reflection;
+using GoBest.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
