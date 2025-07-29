@@ -237,8 +237,8 @@ public partial class MyDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Mode)
-                .HasMaxLength(10)
-                .HasColumnName("mode");
+                .HasColumnName("mode")
+                .HasConversion<int>();
             entity.Property(e => e.Name)
                 .HasMaxLength(32)
                 .HasColumnName("name");
