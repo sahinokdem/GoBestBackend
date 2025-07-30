@@ -1,7 +1,7 @@
 using GoBest.Data;
 using GoBest.Models;
 
-namespace GoBest.Routes
+namespace GoBest.Stations
 {
 
     public class StationRepository

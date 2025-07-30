@@ -4,17 +4,18 @@ using GoBest.Models;
 using GoBest.Routes.DTO;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
+using System.Text.Json; // Add this using statement
 
 namespace GoBest.Routes
 {
-    public class ServiceApiService
+    public class ApiService
     {
         private readonly HttpClient _httpClient;
         private readonly CompanyService _companyService;
         private readonly ServiceRepository _serviceRepository;
-        private readonly ILogger<ServiceApiService> _logger;
+        private readonly ILogger<ApiService> _logger;
 
-        public ServiceApiService(HttpClient httpClient, CompanyService companyService, ServiceRepository serviceRepository, ILogger<ServiceApiService> logger)
+        public ApiService(HttpClient httpClient, CompanyService companyService, ServiceRepository serviceRepository, ILogger<ApiService> logger)
         {
             _httpClient = httpClient;
             _companyService = companyService;
@@ -47,13 +48,13 @@ namespace GoBest.Routes
                     var services = await GetApiResponseAsync("https://example.com/api");
                     _logger.LogInformation("Fetched {Count} services", services.Count);
 
-                    // Örnek DB kaydetme (ServiceRepository içinde SaveAsync gibi bir metot olmalı)
                     foreach (ServiceAPIDto s in services)
                     {
-                        await _companyService.saveCompanyFromApi(s);
-                        _logger.LogInformation("Company saved: {Name} ({Country})", s.Company.Name, s.Company.Country_Code);
-                        await _serviceRepository.SaveFromApi(s);
-                        _logger.LogInformation("Service saved: {Code} ({Mode})", s.Service_Code, s.Mode);
+                        string jsonString = JsonSerializer.Serialize(s, new JsonSerializerOptions
+                        {
+                            WriteIndented = true
+                        });
+                        Console.WriteLine($"Service JSON:\n{jsonString}\n");
                     }
                 }
                 catch (Exception ex)
