@@ -3,6 +3,7 @@ using GoBest.Data;
 using GoBest.Exceptions;
 using GoBest.Models;
 using GoBest.Users;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,40 +14,32 @@ namespace GoBest.Auth
 {
     public class AuthService
     {
-        private readonly MyDbContext _context;
+        private readonly AuthRepository _authRepository;
         private readonly IConfiguration _config;
 
-        public AuthService(MyDbContext context, IConfiguration config)
+        public AuthService(AuthRepository authRepository, IConfiguration config)
         {
-            _context = context;
+            _authRepository = authRepository;
             _config = config;
         }
 
-        public async Task<AuthResponse> RegisterAsync(string fullName, string email, string password)
+        public async Task<AuthResponse> RegisterAsync([FromBody] RegisterRequest request)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == email))
-                throw BusinessException.EmailAlreadyExists(); // ✅ null yerine exception
+            if (await _authRepository.UserExists(request.Email))
+                throw BusinessException.EmailAlreadyExists();
 
-            var user = new User
-            {
-                FullName = fullName,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                Role = UserRole.Customer,
-                CreatedAt = DateTime.UtcNow
-            };
+            var user = AuthMapper.ToUser(request);
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await _authRepository.CreateUser(user);
 
             return AuthMapper.ToResponse(user, GenerateJwtToken(user));
         }
 
         public async Task<AuthResponse> LoginAsync(string email, string password)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _authRepository.GetUserByEmail(email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-                throw BusinessException.InvalidCredentials(); // ✅ null yerine exception
+                throw BusinessException.InvalidCredentials();
 
             return AuthMapper.ToResponse(user, GenerateJwtToken(user));
         }
