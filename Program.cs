@@ -11,9 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 JWTConfig.ConfigureJWT(builder);
 SwaggerConfig.ConfigureSwagger(builder);
 
-builder.Services.AddHttpClient<ApiService>(); // HttpClient injection
-builder.Services.AddHostedService<ServiceApiBackgroundJob>(); // Arka planda çalıştır
-
+builder.Services.AddHttpClient<ApiService>(); 
+builder.Services.AddHostedService<ServiceApiBackgroundJob>();
 
 builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

@@ -11,15 +11,13 @@ namespace GoBest.Routes
     public class ApiService
     {
         private readonly HttpClient _httpClient;
-        private readonly CompanyService _companyService;
-        private readonly ServiceRepository _serviceRepository;
+        private readonly RouteService _routeService;
         private readonly ILogger<ApiService> _logger;
 
-        public ApiService(HttpClient httpClient, CompanyService companyService, ServiceRepository serviceRepository, ILogger<ApiService> logger)
+        public ApiService(HttpClient httpClient, ILogger<ApiService> logger, RouteService routeService)
         {
             _httpClient = httpClient;
-            _companyService = companyService;
-            _serviceRepository = serviceRepository;
+            _routeService = routeService;
             _logger = logger;
         }
 
@@ -45,16 +43,19 @@ namespace GoBest.Routes
                 {
                     _logger.LogInformation("Sending API request...");
 
-                    var services = await GetApiResponseAsync("https://example.com/api");
+                    var services = await GetApiResponseAsync("http://127.0.0.1:8000/services/mock");
                     _logger.LogInformation("Fetched {Count} services", services.Count);
 
                     foreach (ServiceAPIDto s in services)
                     {
+                        _routeService.SaveRouteFromApi(s).Wait(stoppingToken);
+                        /*
                         string jsonString = JsonSerializer.Serialize(s, new JsonSerializerOptions
                         {
                             WriteIndented = true
                         });
-                        Console.WriteLine($"Service JSON:\n{jsonString}\n");
+                        _logger.LogInformation($"Service JSON:\n{jsonString}\n");
+                        */
                     }
                 }
                 catch (Exception ex)

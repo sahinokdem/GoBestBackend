@@ -10,37 +10,19 @@ namespace GoBest.Routes
     public class ServiceRepository
     {
         private readonly MyDbContext _db;
-        private readonly StationRepository _stationRepository;
-        private readonly CompanyRepository _companyRepository;
+        //private readonly StationRepository _stationRepository;
+        //private readonly CompanyRepository _companyRepository;
 
-        public ServiceRepository(MyDbContext db, StationRepository stationRepository, CompanyRepository companyRepository)
+        public ServiceRepository(MyDbContext db)
         {
             _db = db;
-            _stationRepository = stationRepository;
-            _companyRepository = companyRepository;
+            //_stationRepository = stationRepository;
+            //_companyRepository = companyRepository;
         }
 
-        public async Task SaveFromApi(ServiceAPIDto serviceDto)
+        public async Task SaveAsync(Service service)
         {
-            // Convert DTO to Service entity
-
-            var Company = await _companyRepository.GetCompanyByIdAsync(serviceDto.Company.Id);
-
-
-            var service = new Service
-            {
-                ServiceCode = serviceDto.Service_Code,
-                DepartureTime = serviceDto.Origin.Time,
-                ArrivalTime = serviceDto.Destination.Time,
-                BasePrice = serviceDto.Base_Price,
-                Sold = false,
-                SalesCount = 0,
-                //CompanyId = serviceDto.Company.Id,
-                //OriginStationId = serviceDto.Origin.Station_Id,
-                //DestStationId = serviceDto.Destination.Station_Id,
-            };
-
-            // Add to context and save
+            if (service == null) throw new ArgumentNullException(nameof(service));
             _db.Services.Add(service);
             await _db.SaveChangesAsync();
         }

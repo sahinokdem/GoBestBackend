@@ -1,17 +1,25 @@
 using GoBest.Routes;
-using Microsoft.Extensions.Hosting;
 
 public class ServiceApiBackgroundJob : BackgroundService
 {
-    private readonly ApiService _serviceApiService;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ServiceApiBackgroundJob(ApiService serviceApiService)
+    public ServiceApiBackgroundJob(IServiceProvider serviceProvider)
     {
-        _serviceApiService = serviceApiService;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _serviceApiService.StartHourlyRequestsAsync(stoppingToken);
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            using var scope = _serviceProvider.CreateScope();
+
+            var apiService = scope.ServiceProvider.GetRequiredService<ApiService>();
+
+            await apiService.StartHourlyRequestsAsync(stoppingToken);
+
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+        }
     }
 }

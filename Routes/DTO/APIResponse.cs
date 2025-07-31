@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace GoBest.Routes.DTO
 {
     public class ServiceAPIDto
@@ -29,7 +31,12 @@ namespace GoBest.Routes.DTO
         public CityAPIDto City { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
-        public DateTime Time { get; set; }
+
+        [JsonPropertyName("departure_time")]
+        public DateTime? DepartureTime { get; set; }
+
+        [JsonPropertyName("arrival_time")]
+        public DateTime? ArrivalTime { get; set; }
     }
 
     public class CityAPIDto

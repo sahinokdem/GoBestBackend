@@ -1,4 +1,5 @@
 using GoBest.Companies;
+using GoBest.Models;
 using GoBest.Routes.DTO;
 using GoBest.Stations;
 
@@ -10,34 +11,37 @@ namespace GoBest.Routes
         private readonly CompanyService _companyService;
         private readonly StationService _stationService;
 
-        public RouteService(ServiceRepository serviceRepository, CompanyService companyService, StationService stationService)
+        private readonly ILogger<RouteService> _logger;        
+        public RouteService(ServiceRepository serviceRepository, CompanyService companyService, StationService stationService, ILogger<RouteService> logger)
         {
             _serviceRepository = serviceRepository;
             _companyService = companyService;
             _stationService = stationService;
+            _logger = logger;
         }
 
         public async Task SaveRouteFromApi(ServiceAPIDto apiDto)
         {
-            /*
             if (apiDto == null)
             {
                 throw new ArgumentNullException(nameof(apiDto));
             }
-
             // Save company
-            long companyId = await _companyService.saveCompanyFromApi(apiDto.Company);
+            long companyId = await _companyService.SaveCompanyFromApi(apiDto);
+            _logger.LogInformation("Saved company with ID: {CompanyId}", companyId);
 
-            // Save stations
-            foreach (var stationDto in apiDto.Stations)
-            {
-                Station station = StationMapper.ToStation(stationDto);
-                await _stationService.SaveStationAsync(station);
-            }
+            // Save origin station
+            long originStationId = await _stationService.SaveOriginFromApi(apiDto);
+            _logger.LogInformation("Saved origin station with ID: {OriginStationId}", originStationId);
 
-            // Save route
-            await _serviceRepository.SaveFromApi(apiDto, companyId);
-            */
+            // Save destination station
+            long destinationStationId = await _stationService.SaveDestinationFromApi(apiDto);
+            _logger.LogInformation("Saved destination station with ID: {DestinationStationId}", destinationStationId);
+
+            // Create and save service
+            Service service = ServiceMapper.ToService(apiDto, companyId, originStationId, destinationStationId);
+            await _serviceRepository.SaveAsync(service);
+            _logger.LogInformation("Saved service with ID: {ServiceId}", service.Id);
         }
     }
 }

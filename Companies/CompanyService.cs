@@ -12,15 +12,15 @@ namespace GoBest.Companies
         {
             _companyRepository = companyRepository;
         }
-
-        public async Task<long> saveCompanyFromApi(ServiceAPIDto apiDto)
+    
+        public async Task<long> SaveCompanyFromApi(ServiceAPIDto apiDto)
         {
             if (apiDto == null)
             {
                 throw new ArgumentNullException(nameof(apiDto));
             }
 
-            Company company = CompanyMapper.toCompany(apiDto);
+            Company company = CompanyMapper.ToCompany(apiDto);
             return await _companyRepository.SaveAndGetCompanyId(company);
         }
     }
