@@ -49,13 +49,13 @@ namespace GoBest.Routes
                     foreach (ServiceAPIDto s in services)
                     {
                         _routeService.SaveRouteFromApi(s).Wait(stoppingToken);
-                        /*
+                        
                         string jsonString = JsonSerializer.Serialize(s, new JsonSerializerOptions
                         {
                             WriteIndented = true
                         });
                         _logger.LogInformation($"Service JSON:\n{jsonString}\n");
-                        */
+                        
                     }
                 }
                 catch (Exception ex)

@@ -1,6 +1,7 @@
 using GoBest.Companies;
 using GoBest.Models;
 using GoBest.Routes.DTO;
+using GoBest.Seats;
 using GoBest.Stations;
 
 namespace GoBest.Routes
@@ -10,13 +11,15 @@ namespace GoBest.Routes
         private readonly ServiceRepository _serviceRepository;
         private readonly CompanyService _companyService;
         private readonly StationService _stationService;
+        private readonly SeatInventoryService _seatInventoryService;
 
         private readonly ILogger<RouteService> _logger;        
-        public RouteService(ServiceRepository serviceRepository, CompanyService companyService, StationService stationService, ILogger<RouteService> logger)
+        public RouteService(ServiceRepository serviceRepository, CompanyService companyService, StationService stationService, SeatInventoryService seatInventoryService, ILogger<RouteService> logger)
         {
             _serviceRepository = serviceRepository;
             _companyService = companyService;
             _stationService = stationService;
+            _seatInventoryService = seatInventoryService;
             _logger = logger;
         }
 
@@ -42,6 +45,10 @@ namespace GoBest.Routes
             Service service = ServiceMapper.ToService(apiDto, companyId, originStationId, destinationStationId);
             await _serviceRepository.SaveAsync(service);
             _logger.LogInformation("Saved service with ID: {ServiceId}", service.Id);
+
+            // Create and save seat inventory
+            await _seatInventoryService.AddSeatInventoryFromApi(apiDto.Seat_Types, service.Id, CompanyMapper.ToCompanyMode(apiDto));
+            _logger.LogInformation("Added seat inventory for service with ID: {ServiceId}", service.Id);
         }
     }
 }
