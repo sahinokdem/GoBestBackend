@@ -1,3 +1,5 @@
+using GoBest.Users;
+
 namespace GoBest.Auth.DTO
 {
     public class AuthResponse

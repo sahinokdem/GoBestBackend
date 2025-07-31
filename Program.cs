@@ -3,11 +3,16 @@ using GoBest.Data;
 using GoBest.Auth;
 using GoBest.Util;
 using System.Reflection;
+using GoBest.Exceptions;
+using GoBest.Routes;
 
 var builder = WebApplication.CreateBuilder(args);
 
 JWTConfig.ConfigureJWT(builder);
 SwaggerConfig.ConfigureSwagger(builder);
+
+builder.Services.AddHttpClient<ApiService>(); 
+builder.Services.AddHostedService<ServiceApiBackgroundJob>();
 
 builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
