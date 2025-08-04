@@ -1,5 +1,6 @@
 using GoBest.Data;
 using GoBest.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace GoBest.Stations;
 
@@ -40,6 +41,11 @@ public class CityRepository
         _db.Cities.Add(city);
         await _db.SaveChangesAsync();
 
-        return city.Id;  
+        return city.Id;
+    }
+    
+    public async Task<List<City>> GetAllCitiesAsync()
+    {
+        return await _db.Cities.ToListAsync();
     }
 }

@@ -22,4 +22,15 @@ public class CityService
         City city = CityMapper.ToCity(apiDto);
         return await _cityRepository.SaveAndGetCityId(city);
     }
+
+    public async Task<List<CityResponse>> GetAllCitiesAsync()
+    {
+        var cities = await _cityRepository.GetAllCitiesAsync();
+        var cityResponses = new List<CityResponse>();
+        foreach (var city in cities)
+        {
+            cityResponses.Add(CityMapper.ToCityResponse(city));
+        }
+        return cityResponses;
+    }
 }
