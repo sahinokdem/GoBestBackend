@@ -20,5 +20,19 @@ namespace GoBest.Stations
                 CountryCode = cityDto.Country_Code,
             };
         }
+
+        public static CityResponse ToCityResponse(City city)
+        {
+            if (city == null)
+            {
+                throw new ArgumentNullException(nameof(city));
+            }
+            return new CityResponse
+            {
+                Id = city.Id,
+                Name = city.Name,
+                CountryCode = city.CountryCode
+            };
+        }
     }
 }
