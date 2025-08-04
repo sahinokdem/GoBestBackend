@@ -15,6 +15,9 @@ namespace GoBest.Exceptions
         public static BusinessException InvalidCredentials() =>
             new BusinessException("Invalid credentials", 401);
 
+        public static BusinessException RouteNotFound() =>
+            new BusinessException($"Route not found", 404);
+
 
         public static BusinessException NotFound(string resource) =>
             new BusinessException($"{resource} not found", 404);
