@@ -5,6 +5,7 @@ using GoBest.Util;
 using System.Reflection;
 using GoBest.Exceptions;
 using GoBest.Routes;
+using GoBest.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,18 @@ builder.Services.AddHostedService<ServiceApiBackgroundJob>();
 
 builder.Services.AddDbContext<MyDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("CustomerOnly",
+        p => p.RequireRole("Customer"));
+    opts.AddPolicy("AdminOnly",
+        p => p.RequireRole("Admin"));
+    opts.AddPolicy("CompanyRepOnly",
+        p => p.RequireRole("CompanyRep"));
+    opts.AddPolicy("UserOnly",
+        p => p.RequireRole("Customer", "Admin", "CompanyRep"));
+});
 
 
 builder.Services.AddServicesFromAssembly(Assembly.GetExecutingAssembly());
@@ -33,6 +46,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
