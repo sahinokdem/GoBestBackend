@@ -55,7 +55,7 @@ public partial class MyDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.BookingTime)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("booking_time");
             entity.Property(e => e.ItineraryId).HasColumnName("itinerary_id");
             entity.Property(e => e.Status)
@@ -175,7 +175,7 @@ public partial class MyDbContext : DbContext
             entity.Property(e => e.OriginCityId).HasColumnName("origin_city_id");
             entity.Property(e => e.SearchTime)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("search_time");
             entity.Property(e => e.TotalDuration).HasColumnName("total_duration");
             entity.Property(e => e.TotalLegs).HasColumnName("total_legs");
@@ -255,14 +255,14 @@ public partial class MyDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ArrivalTime)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("arrival_time");
             entity.Property(e => e.BasePrice)
                 .HasPrecision(10, 2)
                 .HasColumnName("base_price");
             entity.Property(e => e.CompanyId).HasColumnName("company_id");
             entity.Property(e => e.DepartureTime)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("departure_time");
             entity.Property(e => e.DestStationId).HasColumnName("dest_station_id");
             entity.Property(e => e.OriginStationId).HasColumnName("origin_station_id");
