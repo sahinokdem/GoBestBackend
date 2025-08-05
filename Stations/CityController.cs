@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GoBest.Stations;
@@ -19,4 +20,9 @@ public class CityController : ControllerBase
         var cities = await _cityService.GetAllCitiesAsync();
         return Ok(cities);
     }
+
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPut("{id:long}")]
+    public async Task<IActionResult> UpdateCity(long id, [FromBody] UpdateCityRequest dto)
+        => await _cityService.UpdateCityAsync(id, dto) ? NoContent() : NotFound();
 }
