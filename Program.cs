@@ -9,6 +9,9 @@ using GoBest.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var hashedPassword = BCrypt.Net.BCrypt.HashPassword("admin123");
+Console.WriteLine(hashedPassword);
+
 JWTConfig.ConfigureJWT(builder);
 SwaggerConfig.ConfigureSwagger(builder);
 
