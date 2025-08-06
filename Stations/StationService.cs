@@ -17,6 +17,29 @@ namespace GoBest.Stations
             _cityService = cityService;
         }
 
+        public async Task<List<StationResponse>> GetAllStationsAsync()
+        {
+            var stations = await _stationRepository.GetAllStationsAsync();
+            var stationResponses = new List<StationResponse>();
+            foreach (var station in stations)
+            {
+                stationResponses.Add(StationMapper.ToStationResponse(station));
+            }
+            return stationResponses;
+        }
+
+        public async Task<bool> UpdateStationAsync(long id, UpdateStationRequest dto)
+        {
+            var station = await _stationRepository.GetStationByIdAsync(id);
+            if (station is null) return false;
+
+            station.Name = dto.Name.Trim();
+            station.Code = dto.Code.Trim();
+
+            await _stationRepository.SaveStationAsync(station);
+            return true;
+        }
+
 
         public async Task<long> SaveOriginFromApi(ServiceAPIDto apiDto)
         {

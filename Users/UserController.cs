@@ -5,15 +5,29 @@ namespace GoBest.Users
 {
     public class UsersController : ControllerBase
     {
-        private readonly MyDbContext _context;
+        private readonly UserService _userService;
 
-        public UsersController(MyDbContext context) => _context = context;
-
-        [HttpGet]
-        public IActionResult GetUsers()
+        public UsersController(UserService userService)
         {
-            var users = _context.Users.ToList();
+            _userService = userService;
+        }
+
+        [HttpGet("users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userService.GetAllUsersAsync();
             return Ok(users);
+        }
+
+        [HttpGet("user/{email}")]
+        public async Task<IActionResult> GetUserByEmail(string email)
+        {
+            var user = await _userService.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            return Ok(user);
         }
     }
 

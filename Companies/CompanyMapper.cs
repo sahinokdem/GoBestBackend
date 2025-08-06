@@ -28,5 +28,21 @@ namespace GoBest.Companies
             };
         }
 
+        public static CompanyResponse ToResponse(Company company)
+        {
+            if (company == null)
+            {
+                throw new ArgumentNullException(nameof(company));
+            }
+            return new CompanyResponse
+            {
+                Id = company.Id,
+                Name = company.Name,
+                Mode = company.Mode.ToString(),
+                CountryCode = company.CountryCode,
+                IataCode = company.IataCode
+            };
+        }
+
     }
 }

@@ -42,7 +42,25 @@ namespace GoBest.Stations
                 StationType = apiDto.Mode,
                 CityId = cityId
             };
-        }        
-        
+        }
+
+        internal static StationResponse ToStationResponse(Station station)
+        {
+            if (station == null)
+            {
+                throw new ArgumentNullException(nameof(station));
+            }
+
+            return new StationResponse
+            {
+                Id = station.Id,
+                Name = station.Name,
+                Code = station.Code,
+                CityId = station.CityId,
+                StationType = station.StationType,
+                Latitude = station.Latitude,
+                Longitude = station.Longitude
+            };
+        }
     }
 }

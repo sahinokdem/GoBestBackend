@@ -32,9 +32,24 @@ namespace GoBest.Companies
 
         public async Task SaveCompanyAsync(Company company)
         {
-            _db.Companies.Add(company);
+            if (company == null) throw new ArgumentNullException(nameof(company));
+
+            var existingCompany = await _db.Companies
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == company.Id);
+
+            if (existingCompany == null)
+            {
+                _db.Companies.Add(company);
+            }
+            else
+            {
+                _db.Companies.Update(company);
+            }
+
             await _db.SaveChangesAsync();
         }
+
 
         public async Task<long> SaveAndGetCompanyId(Company company)
         {
