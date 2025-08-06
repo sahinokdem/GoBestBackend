@@ -6,6 +6,7 @@ using System.Reflection;
 using GoBest.Exceptions;
 using GoBest.Routes;
 using GoBest.Users;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,17 @@ Console.WriteLine(hashedPassword);
 
 JWTConfig.ConfigureJWT(builder);
 SwaggerConfig.ConfigureSwagger(builder);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
 
 builder.Services.AddHttpClient<ApiService>(); 
 builder.Services.AddHostedService<ServiceApiBackgroundJob>();
@@ -29,13 +41,21 @@ builder.Services.AddAuthorization(opts =>
         p => p.RequireRole("Admin"));
     opts.AddPolicy("CompanyRepOnly",
         p => p.RequireRole("CompanyRep"));
+    opts.AddPolicy("AdminAndCompanyRepOnly",
+        p => p.RequireRole("Admin", "CompanyRep"));
     opts.AddPolicy("UserOnly",
         p => p.RequireRole("Customer", "Admin", "CompanyRep"));
 });
 
 
 builder.Services.AddServicesFromAssembly(Assembly.GetExecutingAssembly());
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = true; 
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -48,7 +68,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -12,15 +12,18 @@ namespace GoBest.Routes
         private readonly CompanyService _companyService;
         private readonly StationService _stationService;
         private readonly SeatInventoryService _seatInventoryService;
+        private readonly CompanyMaintainerService _companyMaintainerService;
 
-        private readonly ILogger<RouteService> _logger;        
-        public RouteService(ServiceRepository serviceRepository, CompanyService companyService, StationService stationService, SeatInventoryService seatInventoryService, ILogger<RouteService> logger)
+        private readonly ILogger<RouteService> _logger;
+        public RouteService(ServiceRepository serviceRepository, CompanyService companyService,
+         StationService stationService, SeatInventoryService seatInventoryService, ILogger<RouteService> logger, CompanyMaintainerService companyMaintainerService)
         {
             _serviceRepository = serviceRepository;
             _companyService = companyService;
             _stationService = stationService;
             _seatInventoryService = seatInventoryService;
             _logger = logger;
+            _companyMaintainerService = companyMaintainerService;
         }
 
         public async Task SaveRouteFromApi(ServiceAPIDto apiDto)
@@ -50,5 +53,38 @@ namespace GoBest.Routes
             await _seatInventoryService.AddSeatInventoryFromApi(apiDto.Seat_Types, service.Id, CompanyMapper.ToCompanyMode(apiDto));
             _logger.LogInformation("Added seat inventory for service with ID: {ServiceId}", service.Id);
         }
+
+        public async Task<bool> UpdateServiceAsync(long userId, long serviceId, UpdateServiceRequest dto)
+        {
+            var companyId = await _companyMaintainerService.GetCompanyIdByMaintainerAsync(userId);
+            if (companyId == 0)
+            {
+                throw new UnauthorizedAccessException("User is not a maintainer of any company.");
+            }
+            var service = await _serviceRepository.GetServiceByCompanyIdAsync(companyId, serviceId);
+            if (service is null) return false;
+            service.DepartureTime = dto.DepartureTime;
+            service.ArrivalTime = dto.ArrivalTime;
+
+            await _serviceRepository.SaveAsync(service);
+            return true;
+        }
+
+        internal async Task<IReadOnlyList<Service>> GetAllServicesAsync()
+        {
+            return await _serviceRepository.GetAllServicesAsync();
+        }
+
+        public async Task<IReadOnlyList<ServiceResponse>> GetAllServicesOfCompanyAsync(long userId)
+        {
+            var companyId = await _companyMaintainerService.GetCompanyIdByMaintainerAsync(userId);
+
+            if (companyId == 0)
+                throw new UnauthorizedAccessException("Invalid maintainer");
+
+            var services = await _serviceRepository.GetServicesByCompanyIdAsync(companyId);
+            return ServiceMapper.ToResponses(services);
+        }
+
     }
 }

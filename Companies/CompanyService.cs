@@ -6,11 +6,14 @@ namespace GoBest.Companies
     public class CompanyService
     {
         private readonly CompanyRepository _companyRepository;
+        private readonly CompanyMaintainerService _companyMaintainerService;
 
 
-        public CompanyService(CompanyRepository companyRepository)
+        public CompanyService(CompanyRepository companyRepository,
+         CompanyMaintainerService companyMaintainerService)
         {
             _companyRepository = companyRepository;
+            _companyMaintainerService = companyMaintainerService;
         }
 
         public async Task<long> SaveCompanyFromApi(ServiceAPIDto apiDto)
@@ -34,10 +37,15 @@ namespace GoBest.Companies
             }
             return companyResponses;
         }
-        
-        public async Task<bool> UpdateCompanyAsync(long id, UpdateCompanyRequest dto)
+
+        public async Task<bool> UpdateCompanyAsync(long userId, long companyId, UpdateCompanyRequest dto)
         {
-            var company = await _companyRepository.GetCompanyByIdAsync(id);
+            if (await _companyMaintainerService.IsCompanyMaintainerAsync(userId)
+                && (!await _companyMaintainerService.IsCompanyMaintainerOfCompanyAsync(companyId, userId)))
+            {
+                throw new UnauthorizedAccessException("User is not authorized to update this company.");
+            }
+            var company = await _companyRepository.GetCompanyByIdAsync(companyId);
             if (company is null) return false;
 
             company.Name = dto.Name.Trim();

@@ -13,3 +13,4 @@ public sealed record CompanyResponse
     public string CountryCode { get; init; } = null!;
     public string? IataCode { get; init; }
 }
+
