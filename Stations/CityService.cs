@@ -33,4 +33,16 @@ public class CityService
         }
         return cityResponses;
     }
+
+    public async Task<bool> UpdateCityAsync(long id, UpdateCityRequest dto)
+    {
+        var city = await _cityRepository.GetCityByIdAsync(id);
+        if (city is null) return false;
+
+        city.Name        = dto.Name.Trim();
+        city.CountryCode = dto.CountryCode.ToUpperInvariant();
+
+        await _cityRepository.SaveCityAsync(city);
+        return true;
+    }
 }

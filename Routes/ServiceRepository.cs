@@ -21,10 +21,53 @@ namespace GoBest.Routes
             //_companyRepository = companyRepository;
         }
 
+        public async Task<Service?> GetServiceByIdAsync(long serviceId)
+        {
+            return await _db.Services
+                .Include(s => s.OriginStation).ThenInclude(st => st.City)
+                .Include(s => s.DestStation).ThenInclude(st => st.City)
+                .Include(s => s.Company)
+                .FirstOrDefaultAsync(s => s.Id == serviceId);
+        }
+
         public async Task SaveAsync(Service service)
         {
             if (service == null) throw new ArgumentNullException(nameof(service));
-            _db.Services.Add(service);
+
+            var existingService = await _db.Services
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == service.Id);
+
+            if (existingService == null)
+            {
+                _db.Services.Add(service);
+            }
+            else
+            {
+                // 1️⃣ Bu servisi içeren itinerary'leri bul
+                var relatedItineraries = await _db.ItineraryLegs
+                    .Where(il => il.ServiceId == service.Id && il.ItineraryId != null)
+                    .Select(il => il.ItineraryId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+
+                // 2️⃣ İlgili leg ve itinerary'leri çek
+                var legsToRemove = await _db.ItineraryLegs
+                    .Where(il => relatedItineraries.Contains(il.ItineraryId!.Value))
+                    .ToListAsync();
+
+                var itinerariesToRemove = await _db.Itineraries
+                    .Where(i => relatedItineraries.Contains(i.Id))
+                    .ToListAsync();
+
+                // 3️⃣ Silme işlemleri
+                _db.ItineraryLegs.RemoveRange(legsToRemove);
+                _db.Itineraries.RemoveRange(itinerariesToRemove);
+
+                // 4️⃣ Güncelleme
+                _db.Services.Update(service);
+            }
+
             await _db.SaveChangesAsync();
         }
 
@@ -43,7 +86,7 @@ namespace GoBest.Routes
                 .Include(s => s.ServiceSeatInventories)
                     .ThenInclude(inv => inv.SeatType)                  // (mode filtresi için)
                 .Where(s => s.DepartureTime >= startUtc &&
-                            s.DepartureTime <  endUtc);
+                            s.DepartureTime < endUtc);
 
             if (rq.Mode != TravelMode.All)
             {
@@ -55,7 +98,34 @@ namespace GoBest.Routes
             return await query.AsNoTrackingWithIdentityResolution().ToListAsync(ct);
         }
 
+        internal async Task<IReadOnlyList<Service>> GetAllServicesAsync()
+        {
+            return await _db.Services
+                .Include(s => s.OriginStation).ThenInclude(st => st.City)
+                .Include(s => s.DestStation).ThenInclude(st => st.City)
+                .Include(s => s.Company)
+                .AsNoTracking()
+                .ToListAsync();
+        }
 
-
+        public async Task<List<Service>> GetServicesByCompanyIdAsync(long companyId)
+        {
+            return await _db.Services
+                .Include(s => s.OriginStation).ThenInclude(st => st.City)
+                .Include(s => s.DestStation).ThenInclude(st => st.City)
+                .Include(s => s.Company)
+                .Where(s => s.CompanyId == companyId)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+        
+        public async Task<Service?> GetServiceByCompanyIdAsync(long companyId, long serviceId)
+        {
+            return await _db.Services
+                .Include(s => s.OriginStation!).ThenInclude(st => st.City!)
+                .Include(s => s.DestStation!).ThenInclude(st => st.City!)
+                .Include(s => s.Company!)
+                .FirstOrDefaultAsync(s => s.CompanyId == companyId && s.Id == serviceId);
+        }
     }
 }

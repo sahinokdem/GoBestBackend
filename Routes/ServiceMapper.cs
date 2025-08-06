@@ -19,10 +19,27 @@ public class ServiceMapper
             ServiceCode = serviceDto.Service_Code,
             OriginStationId = originStationId,
             DestStationId = destStationId,
-            DepartureTime    = (DateTime)(serviceDto.Origin.DepartureTime?.AsUtc()),
-            ArrivalTime      = (DateTime)(serviceDto.Destination.ArrivalTime?.AsUtc()),
+            DepartureTime = (DateTime)(serviceDto.Origin.DepartureTime?.AsUtc()),
+            ArrivalTime = (DateTime)(serviceDto.Destination.ArrivalTime?.AsUtc()),
             BasePrice = serviceDto.Base_Price,
             CompanyId = companyId
         };
+    }
+
+    public static List<ServiceResponse> ToResponses(List<Service> services)
+    {
+        var responses = new List<ServiceResponse>();
+        foreach (var service in services)
+        {
+            responses.Add(new ServiceResponse
+            {
+                Id = service.Id,
+                ServiceCode = service.ServiceCode,
+                OriginCity = service.OriginStation?.City?.Name ?? "Unknown",
+                DestCity = service.DestStation?.City?.Name ?? "Unknown",
+                CompanyName = service.Company?.Name ?? "Unknown"
+            });
+        }
+        return responses;
     }
 }

@@ -18,10 +18,24 @@ public class CityRepository
         return await _db.Cities.FindAsync(cityId);
     }
 
+
     public async Task SaveCityAsync(City city)
     {
         if (city == null) throw new ArgumentNullException(nameof(city));
-        _db.Cities.Add(city);
+
+        var existingCity = await _db.Cities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == city.Id);
+
+        if (existingCity == null)
+        {
+            _db.Cities.Add(city);
+        }
+        else
+        {
+            _db.Cities.Update(city);
+        }
+
         await _db.SaveChangesAsync();
     }
 

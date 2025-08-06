@@ -21,6 +21,8 @@ namespace GoBest.Auth
         {
             _authRepository = authRepository;
             _config = config;
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword("admin123");
+            Console.WriteLine(hashedPassword);
         }
 
         public async Task<AuthResponse> RegisterAsync([FromBody] RegisterRequest request)

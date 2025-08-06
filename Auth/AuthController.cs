@@ -28,6 +28,7 @@ namespace GoBest.Auth
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var token = await _authService.LoginAsync(request.Email, request.Password);
+            Console.WriteLine($"Login attempt for {request.Email} at {DateTime.UtcNow}");
             if (token == null)
                 return Unauthorized("Invalid credentials");
 
