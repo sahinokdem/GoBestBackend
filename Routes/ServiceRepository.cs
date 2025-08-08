@@ -4,6 +4,7 @@ using GoBest.Models;
 using GoBest.Routes.DTO;
 using GoBest.Stations;
 using Microsoft.EntityFrameworkCore;
+using GoBest.Itinaries;
 
 namespace GoBest.Routes
 {
@@ -88,12 +89,10 @@ namespace GoBest.Routes
                 .Where(s => s.DepartureTime >= startUtc &&
                             s.DepartureTime < endUtc);
 
-            if (rq.Mode != TravelMode.All)
-            {
-                var mode = (CompanyMode)rq.Mode;
-                query = query.Where(s =>
-                    s.ServiceSeatInventories.Any(inv => inv.SeatType!.Mode == mode));
-            }
+
+            var compMode = rq.Mode.ToCompanyMode();
+            if (compMode is not null)
+                query = query.Where(s => s.Company!.Mode == compMode);
 
             return await query.AsNoTrackingWithIdentityResolution().ToListAsync(ct);
         }
