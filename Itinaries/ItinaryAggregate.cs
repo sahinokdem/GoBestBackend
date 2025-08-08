@@ -78,7 +78,6 @@ public sealed class ItineraryAggregate
             ItineraryId   = 0,
             TotalLegs     = TotalLegs,
             TotalDuration = TotalDuration,
-            TotalPrice    = TotalPrice,
             Legs          = dtoLegs,
             Summary       = $"{TotalLegs} legs · {Format(TotalDuration)} · €{TotalPrice:N0}"
         };
