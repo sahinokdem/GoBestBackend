@@ -63,7 +63,7 @@ namespace GoBest.Routes
                     _logger.LogError(ex, "Error occurred while fetching services");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(2), stoppingToken);
             }
         }
     }
