@@ -32,7 +32,9 @@ public static class ItineraryMappingExtensions
                        Arrival = l.Service.ArrivalTime,
                        Price = l.Price ?? l.Service.BasePrice,
                        SeatTypeName = l.SeatType.Name,
-                       CompanyMode = l.Service.Company.Mode.ToString() // ★ yeni
+                       CompanyMode = l.Service.Company.Mode.ToString(), // ★ yeni
+                       OriginStation = l.Service.OriginStation.Name,
+                       DestStation = l.Service.DestStation.Name
                    })
                    .ToArray()
         });
