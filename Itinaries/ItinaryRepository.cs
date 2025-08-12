@@ -19,7 +19,7 @@ public class ItineraryRepository
                         rq.TravelDate.ToDateTime(TimeOnly.MinValue),
                         DateTimeKind.Utc);
         var endUtc   = startUtc.AddDays(1);
-        var compMode = rq.Mode.ToCompanyMode();          // önceki düzeltme
+        var compMode = rq.Mode.ToCompanyMode();
 
         return await _db.Itineraries
             .AsNoTracking()
@@ -32,31 +32,34 @@ public class ItineraryRepository
             .Include(i => i.ItineraryLegs)
                 .ThenInclude(l => l.Service)
                     .ThenInclude(s => s.DestStation).ThenInclude(st => st.City)
-            .Include(i => i.ItineraryLegs)                       // 🔸 koltuk adedi için
+            .Include(i => i.ItineraryLegs)
+                .ThenInclude(l => l.SeatType) // SeatType.Name kullanıyorsun, ekleyelim
+            .Include(i => i.ItineraryLegs)
                 .ThenInclude(l => l.Service)
                     .ThenInclude(s => s.ServiceSeatInventories)
             .Where(i =>
-                /* şehir ve tarih filtresi */
                 i.OriginCityId == rq.OriginCityId &&
                 i.DestCityId   == rq.DestCityId   &&
                 i.SearchTime  >= startUtc         &&
                 i.SearchTime  <  endUtc           &&
 
-                /* mode (Bus/Train/Flight) filtresi  */
                 (compMode == null ||
                     i.ItineraryLegs.Any(l => l.Service.Company!.Mode == compMode)) &&
 
-                /* 👇 yeni: her bacakta yeterli koltuk */
-                (rq.Passengers <= 0 ||                     // 0 → kapasite kontrolü yok
+                // ⬇️ pax filtresi: leg’deki SeatTypeId ile eşleşen inventory’de Available >= pax olmalı
+                (rq.Passengers <= 0 ||
                     i.ItineraryLegs.All(l =>
+                        l.SeatTypeId != null &&
                         l.Service.ServiceSeatInventories
-                        .Any(inv => inv.Available >= rq.Passengers)))
+                        .Any(inv => inv.SeatTypeId == l.SeatTypeId &&
+                                    inv.Available   >= rq.Passengers)))
             )
             .OrderBy(i => i.TotalPrice)
             .Take(20)
             .ToSearchDto()
             .ToListAsync(ct);
     }
+
 
 
 
