@@ -66,6 +66,10 @@ public partial class MyDbContext : DbContext
                 .HasColumnName("total_price");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
+            entity.Property(e => e.TicketCount)                 // ★ YENİ
+                .HasColumnName("ticket_count")
+                .HasDefaultValue(1); // DB tarafında da varsayılan 1
+
             entity.HasOne(d => d.Itinerary).WithMany(p => p.Bookings)
                 .HasForeignKey(d => d.ItineraryId)
                 .HasConstraintName("booking_itinerary_id_fkey");

@@ -26,8 +26,9 @@ public class BookingService
             UserId = userId,
             ItineraryId = itin.Id,
             BookingTime = DateTime.UtcNow,
-            TotalPrice = total,
-            Status = "APPROVED"
+            TotalPrice = total * req.TicketCount, // Toplam fiyatı bilet sayısıyla çarp
+            Status = "APPROVED",
+            TicketCount = req.TicketCount
         };
 
         await _repo.AddAsync(booking, ct);
@@ -35,8 +36,9 @@ public class BookingService
         return new CreateBookingResponse
         {
             BookingId = booking.Id,
-            TotalPrice = total,
-            BookingTime = booking.BookingTime
+            TotalPrice = total * req.TicketCount,
+            BookingTime = booking.BookingTime,
+            TicketCount = booking.TicketCount, // Bilet sayısını da döndür
         };
     }
     
@@ -60,7 +62,8 @@ public class BookingService
                 Status = b.Status,
                 BookingTime = b.BookingTime,
                 Departure = legs.First().DepartureTime.ToLocalTime(),
-                Arrival = legs.Last().ArrivalTime.ToLocalTime()
+                Arrival = legs.Last().ArrivalTime.ToLocalTime(),
+                TicketCount = b.TicketCount
             };
         }).ToList();
     }
