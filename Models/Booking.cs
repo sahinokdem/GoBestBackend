@@ -17,6 +17,8 @@ public partial class Booking
 
     public string Status { get; set; } = null!;
 
+    public int TicketCount { get; set; } = 1;   // ★ YENİ
+
     public virtual ICollection<BookingLeg> BookingLegs { get; set; } = new List<BookingLeg>();
 
     public virtual Itinerary? Itinerary { get; set; }

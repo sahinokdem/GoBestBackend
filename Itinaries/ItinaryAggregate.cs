@@ -61,16 +61,19 @@ public sealed class ItineraryAggregate
     {
         var dtoLegs = Legs.Select((leg, idx) => new LegDto
         {
-            Order        = (short)(idx + 1),
-            ServiceId    = leg.Service.Id,
-            ServiceCode  = leg.Service.ServiceCode,
-            CompanyName  = leg.Service.Company!.Name,
-            OriginCity   = leg.Service.OriginStation!.City!.Name,
-            DestCity     = leg.Service.DestStation!.City!.Name,
-            Departure    = leg.Service.DepartureTime,
-            Arrival      = leg.Service.ArrivalTime,
+            Order = (short)(idx + 1),
+            ServiceId = leg.Service.Id,
+            ServiceCode = leg.Service.ServiceCode,
+            CompanyName = leg.Service.Company!.Name,
+            OriginCity = leg.Service.OriginStation!.City!.Name,
+            DestCity = leg.Service.DestStation!.City!.Name,
+            Departure = leg.Service.DepartureTime,
+            Arrival = leg.Service.ArrivalTime,
             SeatTypeName = leg.SeatType.Name,
-            Price        = leg.Price
+            Price = leg.Price,
+            CompanyMode = leg.Service.Company!.Mode.ToString(),
+            OriginStation = leg.Service.OriginStation!.Name,
+            DestStation = leg.Service.DestStation!.Name
         }).ToArray();
 
         return new SearchResponse

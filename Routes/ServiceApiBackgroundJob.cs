@@ -18,8 +18,6 @@ public class ServiceApiBackgroundJob : BackgroundService
             var apiService = scope.ServiceProvider.GetRequiredService<ApiService>();
 
             await apiService.StartHourlyRequestsAsync(stoppingToken);
-
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 }

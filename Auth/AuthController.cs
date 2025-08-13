@@ -31,7 +31,7 @@ namespace GoBest.Auth
             Console.WriteLine($"Login attempt for {request.Email} at {DateTime.UtcNow}");
             if (token == null)
                 return Unauthorized("Invalid credentials");
-
+            Console.WriteLine($"Login successful for ");
             return Ok(new { token });
         }
     }

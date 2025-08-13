@@ -33,36 +33,39 @@ public sealed class ItineraryService
 
     public async Task<IReadOnlyList<SearchResponse>> SearchAsync(SearchRequest rq, CancellationToken ct)
     {
-        // 1️⃣ cached results – today’s DB first
+        // 1) Önce cache/DB
         var cached = await _itRepo.GetItinerariesAsync(rq, ct);
         if (cached.Any()) return cached;
 
-        // 2️⃣ gather candidate services for the requested day & mode
+        // 2) Günün servislerini topla (mode filtresi burada var)
         var candidates = await _svcRepo.GetDailyServicesAsync(rq, ct);
 
-        // 3️⃣ build best itineraries in-memory
-        var itineraries = BuildItineraries(rq, candidates).ToArray();
+        // 3) Tüm seat type kombinasyonlarını üret (pax filtresi YOK)
+        var aggregates = BuildItineraries(rq, candidates).ToArray();
 
-        // 4️⃣ persist and map to DTOs
-        var persisted = await _itRepo.SaveAsync(itineraries, rq, ct);
-        return persisted;
+        // 4) Hepsini DB'ye kaydet (pax bakmadan)
+        await _itRepo.SaveAsync(aggregates, rq, ct);   // dönüşü artık kullanmıyoruz
+
+        // 5) Kullanıcıya dönerken DB’den pax + seat type bazlı filtre ile oku
+        //    (GetItinerariesAsync içinde zaten: inv.SeatTypeId == l.SeatTypeId && inv.Available >= rq.Passengers)
+        var fresh = await _itRepo.GetItinerariesAsync(rq, ct);
+        return fresh;
     }
 
+
+
     /* ---------- path-finding ---------- */
- /* ---------- path-finding ---------- */
     private IEnumerable<ItineraryAggregate> BuildItineraries(
         SearchRequest rq, IReadOnlyList<Service> services)
     {
-        /* Şehir → servis listesi grafiği */
         var graph = services
             .GroupBy(s => s.OriginStation!.CityId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        /* BFS kuyruğu */
         var q = new Queue<Path>();
         q.Enqueue(new Path(rq.OriginCityId, null, new()));
 
-        const int MAX_DAYS_BETWEEN = 1;                    // ★ en fazla 1 gün
+        const int MAX_DAYS_BETWEEN = 1;
         TimeSpan MAX_HORIZON = TimeSpan.FromDays(MAX_DAYS_BETWEEN);
 
         while (q.Count > 0)
@@ -73,24 +76,21 @@ public sealed class ItineraryService
             foreach (var svc in graph.GetValueOrDefault(current.City)
                                     ?? Enumerable.Empty<Service>())
             {
-                /* 1) İlk bacak travelDate günü olmalı  */
                 bool firstLeg = current.Legs.Count == 0;
                 if (firstLeg && !SameDate(svc.DepartureTime, rq.TravelDate))
                     continue;
 
-                /* 2) Aktarmalarda minimum bekleme 20 dk */
                 if (current.LastArrival.HasValue &&
                     svc.DepartureTime < current.LastArrival + MIN_BUFFER)
                     continue;
 
-                /* 3) Tüm yolculuk en fazla 1 takvim günü sürsün */
-                if (svc.DepartureTime - current.Legs
-                        .FirstOrDefault()?.Service.DepartureTime > MAX_HORIZON)
+                if (svc.DepartureTime - current.Legs.FirstOrDefault()?.Service.DepartureTime > MAX_HORIZON)
                     continue;
 
-                /* 4) Koltuk kapasitesi */
+                // ⬇️ Tüm seat type’ları dene (istersen Available > 0 ile daralt)
                 foreach (var inv in svc.ServiceSeatInventories
-                                    .Where(x => x.Available >= rq.Passengers))
+                                    //.Where(x => x.Available > 0) // istersen aç
+                                    )
                 {
                     var nextPath = current.Extend(new TravelLeg(svc, inv));
 
@@ -102,6 +102,7 @@ public sealed class ItineraryService
             }
         }
     }
+
 
     
     private static bool SameDate(DateTime dt, DateOnly target) =>
