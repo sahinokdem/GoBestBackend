@@ -1,6 +1,7 @@
+using GoBest.Companies;
 using GoBest.Models;
 
-namespace GoBest.Itinaries.Mapping;
+namespace GoBest.Itinaries;
 
 /// <summary> LINQ tarafında kullanılacak projeksiyon uzantısı. </summary>
 public static class ItineraryMappingExtensions
@@ -10,10 +11,10 @@ public static class ItineraryMappingExtensions
     {
         return query.Select(i => new SearchResponse
         {
-            ItineraryId   = i.Id,
-            TotalLegs     = i.TotalLegs ?? 0,
+            ItineraryId = i.Id,
+            TotalLegs = i.TotalLegs ?? 0,
             TotalDuration = i.TotalDuration ?? TimeSpan.Zero,
-            Summary       = $"{i.TotalLegs} legs · " +
+            Summary = $"{i.TotalLegs} legs · " +
                             $"{(int)(i.TotalDuration ?? TimeSpan.Zero).TotalHours} h " +
                             $"{(i.TotalDuration ?? TimeSpan.Zero).Minutes:D2} m · " +
                             $"€{i.TotalPrice ?? 0:N0}",
@@ -31,8 +32,20 @@ public static class ItineraryMappingExtensions
                        Arrival = l.Service.ArrivalTime,
                        Price = l.Price ?? l.Service.BasePrice,
                        SeatTypeName = l.SeatType.Name,
+                       CompanyMode = l.Service.Company.Mode.ToString(), // ★ yeni
+                       OriginStation = l.Service.OriginStation.Name,
+                       DestStation = l.Service.DestStation.Name
                    })
                    .ToArray()
         });
     }
+    
+    public static CompanyMode? ToCompanyMode(this TravelMode mode) => mode switch
+    {
+        TravelMode.Bus    => CompanyMode.Bus,
+        TravelMode.Train  => CompanyMode.Train,
+        TravelMode.Flight => CompanyMode.Air,
+        _                 => null               // All
+    };
+
 }

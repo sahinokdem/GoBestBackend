@@ -1,5 +1,5 @@
 using GoBest.Data;
-using GoBest.Itinaries.Mapping;
+using GoBest.Itinaries;
 using GoBest.Itineraries;
 using GoBest.Models;
 using Microsoft.EntityFrameworkCore;
@@ -15,8 +15,11 @@ public class ItineraryRepository
     public async Task<IReadOnlyList<SearchResponse>> GetItinerariesAsync(
         SearchRequest rq, CancellationToken ct)
     {
-        var startUtc = DateTime.SpecifyKind(rq.TravelDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        var startUtc = DateTime.SpecifyKind(
+                        rq.TravelDate.ToDateTime(TimeOnly.MinValue),
+                        DateTimeKind.Utc);
         var endUtc   = startUtc.AddDays(1);
+        var compMode = rq.Mode.ToCompanyMode();
 
         return await _db.Itineraries
             .AsNoTracking()
@@ -25,19 +28,39 @@ public class ItineraryRepository
                     .ThenInclude(s => s.Company)
             .Include(i => i.ItineraryLegs)
                 .ThenInclude(l => l.Service)
-                    .ThenInclude(s => s.OriginStation)    .ThenInclude(st => st.City) // ★
+                    .ThenInclude(s => s.OriginStation).ThenInclude(st => st.City)
             .Include(i => i.ItineraryLegs)
                 .ThenInclude(l => l.Service)
-                    .ThenInclude(s => s.DestStation)      .ThenInclude(st => st.City) // ★
-            .Where(i => i.OriginCityId == rq.OriginCityId &&
-                        i.DestCityId   == rq.DestCityId &&
-                        i.SearchTime  >= startUtc &&
-                        i.SearchTime  <  endUtc)
+                    .ThenInclude(s => s.DestStation).ThenInclude(st => st.City)
+            .Include(i => i.ItineraryLegs)
+                .ThenInclude(l => l.SeatType) // SeatType.Name kullanıyorsun, ekleyelim
+            .Include(i => i.ItineraryLegs)
+                .ThenInclude(l => l.Service)
+                    .ThenInclude(s => s.ServiceSeatInventories)
+            .Where(i =>
+                i.OriginCityId == rq.OriginCityId &&
+                i.DestCityId   == rq.DestCityId   &&
+                i.SearchTime  >= startUtc         &&
+                i.SearchTime  <  endUtc           &&
+
+                (compMode == null ||
+                    i.ItineraryLegs.Any(l => l.Service.Company!.Mode == compMode)) &&
+
+                // ⬇️ pax filtresi: leg’deki SeatTypeId ile eşleşen inventory’de Available >= pax olmalı
+                (rq.Passengers <= 0 ||
+                    i.ItineraryLegs.All(l =>
+                        l.SeatTypeId != null &&
+                        l.Service.ServiceSeatInventories
+                        .Any(inv => inv.SeatTypeId == l.SeatTypeId &&
+                                    inv.Available   >= rq.Passengers)))
+            )
             .OrderBy(i => i.TotalPrice)
             .Take(20)
             .ToSearchDto()
             .ToListAsync(ct);
     }
+
+
 
 
 
