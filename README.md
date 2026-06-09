@@ -1,93 +1,171 @@
-# GoBest
+# 🧭 GoBest — Multi-Modal Travel Reservation Backend
 
+> 🇹🇷 Türkçe için: [README.tr.md](README.tr.md)
 
+GoBest is the backend of a travel platform that brings **flights, buses, and trains** together in a single interface. When a user searches from one city to another and there is no direct service, the system **automatically builds multi-leg transfer routes** and returns the most suitable options.
 
-## Getting started
+> In short: it turns the classic "single mode, direct trips only" approach into a multi-modal system that composes transfer routes, caches results, and is designed for scale.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+---
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 🚀 Why This Project?
 
-## Add your files
+Most reservation systems handle a single transport mode and only direct trips. GoBest aims to:
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- Combine flight / bus / train services into **one unified list**
+- Build a **transfer route on the fly** when no direct trip exists (or a cheaper one is possible)
+- Use **smart caching** instead of recomputing the same search repeatedly
+- Keep the active dataset light through a **scalable database design**
+
+So the project is an **end-to-end system design** covering the data model, external service integration, the route-search algorithm, and the booking flow together.
+
+---
+
+## 🧠 Quick Explanation (Non-Technical)
+
+When a user searches "Istanbul → Berlin", the system:
+
+1. Collects all services for that day (flight, bus, train)
+2. Returns a direct trip if one exists; otherwise builds a **transfer route** (e.g. Istanbul → Frankfurt → Berlin)
+3. Evaluates these routes by price / duration / number of transfers
+4. If the same search was made before, returns it **instantly from cache** instead of recomputing
+
+**Result:** faster responses, no redundant computation, and a structure that won't slow down as it grows.
+
+---
+
+## 🏗️ Architecture Flow
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/sahinokdem/gobest-backend.git
-git branch -M main
-git push -uf origin main
+[Route API (Python/FastAPI)]  ──►  service data (flight / bus / train)
+            │  (backend periodically fetches and stores it)
+            ▼
+┌─────────────────────────────────────────────┐
+│              .NET Core Backend               │
+│                                              │
+│   Search   ─►  constrained BFS over a city   │
+│                graph  ─►  itinerary list     │
+│                                              │
+│   Rerank   ─►  results sent to GoBestModel,  │
+│                reordered by relevance        │
+│                                              │
+│   Cache    ─►  generated itineraries stored  │
+│                in DB, served on repeat       │
+│                                              │
+│   Booking  ─►  a selected itinerary becomes  │
+│                a reservation                 │
+└─────────────────────────────────────────────┘
+            │                         │
+            ▼                         ▼
+     [PostgreSQL]            [GoBestModel — ML service]
+  itinerary + leg model      LightGBM reranking
+   (designed for scale)      (separate repo)
 ```
 
-## Integrate with your tools
+- **API Layer:** ASP.NET Core (.NET 8)
+- **Auth:** JWT + role-based access (Customer / Maintainer / Admin)
+- **Database:** PostgreSQL + Entity Framework Core (database-first)
+- **External Data:** Route API (Python / FastAPI)
+- **ML Reranking:** separate service → [GoBestModel](https://github.com/sahinokdem/GoBestModel)
 
-- [ ] [Set up project integrations](https://gitlab.com/sahinokdem/gobest-backend/-/settings/integrations)
+---
 
-## Collaborate with your team
+## 👥 Roles
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+- **Customer** — search, filter, view route details, book tickets, view past bookings
+- **Company Maintainer** — manage their own company's services, schedules, and seat info
+- **Admin** — create maintainer accounts, complete missing city / station / company data coming from the external API
 
-## Test and Deploy
+---
 
-Use the built-in continuous integration in GitLab.
+## ⚡ Hard Parts & Engineering Solutions
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+### 1) Transfer Route Generation (Endless / Nonsensical Routes)
 
-***
+**Problem:** A direct service between two cities doesn't always exist, so transfers must be composed — but a naive approach produces endless or nonsensical routes (10-leg trips, or connections that depart before the previous leg arrives).
 
-# Editing this README
+**Solution:** A **BFS over a city graph, pruned with real-world constraints**:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+- **Max 2 transfers** (3 legs) — prevents endless chains
+- **Minimum transfer buffer** — enough time between a leg's arrival and the next leg's departure (realistic connections)
+- **Same-day horizon** — the whole route must fit a sensible time window
+- Expands every **seat-type combination** across legs (Eco–Eco, Eco–Bus, …) as independent options
 
-## Suggestions for a good README
+### 2) Separating Search Routes from Bookings
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+**Problem:** The same composed route plays two very different roles. As a *search result* it's disposable — if nobody buys it, it's just clutter once its date passes. As a *purchase* it must be kept for the user's history. Treating both the same way either bloats the database with dead search data or risks losing real bookings.
 
-## Name
-Choose a self-explaining name for your project.
+**Solution:** The model splits this into two structures with different lifecycles, keyed off a `sold` flag on each `service`:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+- **Itinerary + ItineraryLegs** → a generated/cached search result. The `Itinerary` holds the summary (total price, duration, transfer count); each `ItineraryLeg` holds one segment (order, service, seat type, price). Cached and re-served for repeated searches.
+- **Booking + BookingLegs** → a purchase. The `Booking` references the itinerary it was made from, and each `BookingLeg` records the purchased segment (service, seat type).
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+The lifecycle rule is what ties it together:
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+- A service that is **never sold** (`sold = false`), along with any itineraries/legs generated from it, is **deleted once its date passes** — dead search data doesn't accumulate.
+- A service that **is sold** (`sold = true`), along with its itinerary, legs, and booking, is **never deleted** while live. Because a booking always implies a sold service, the itinerary behind it is never a deletion target — so the user's history stays intact without needing any cascade trickery.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+This is why `BookingLeg` stores its own `service` and `seat_type` references: a booking is self-describing and doesn't depend on the search-side records surviving.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+**Why price lives on the itinerary, not the booking leg:** per-segment price sits on `ItineraryLeg`, and the booking keeps the agreed total on `Booking.TotalPrice`. This avoids duplicating pricing and keeps the booking leg focused on *what* was purchased (service + seat type).
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+### 3) Redundant Computation (Performance)
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+**Problem:** Hundreds of users search the same popular route (e.g. Istanbul–Ankara). Recomposing it every time is wasteful.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+**Solution:** A **cache-aside** strategy. Generated itineraries are persisted to the DB; when the same route + date is searched again, it's served directly from the database without recomposition. Target: **search ≤ 3 seconds**.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### 4) Dynamic Pricing & Seat Availability
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+**Problem:** In a multi-leg route, each service has different seat types and price multipliers, and there must be enough free seats for the requested passenger count.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+**Solution:** Pricing is computed dynamically (base price × passengers, with seat-type multipliers). Before results are returned, **seat availability is validated** against the requested passenger count, so invalid options are never shown.
 
-## License
-For open source projects, say how it is licensed.
+### 5) Smarter Ranking Than Price Alone
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**Problem:** Sorting purely by lowest price ignores what users actually prefer (duration, transfers, company, past behavior).
+
+**Solution:** Search results are passed to a separate ML service, [GoBestModel](https://github.com/sahinokdem/GoBestModel), which **reranks them by predicted relevance** using a LightGBM model trained on interaction features (clicks / bookings).
+
+---
+
+## 📈 Designed for Scale
+
+The system was designed from the database layer up with growth in mind. The `sold` flag on each service drives a two-track data lifecycle that keeps the active database small while preserving everything a user actually bought.
+
+![Database schema (ER diagram)](docs/er-diagram.png)
+
+The schema is built for this; the cleanup and partitioning jobs themselves are the next implementation phase (designed, not yet implemented):
+
+- **Database-first design:** Schema, relationships, and constraints were modeled before most of the application logic, with indexing and query shape considered early.
+- **Cleanup of unsold data (planned):** Unsold services past their date — and the itineraries/legs generated from them — are designed to be purged automatically, so dead search data never piles up in the hot tables.
+- **Partitioning for sold data (planned):** Sold services and everything tied to them (itinerary, legs, booking) are designed to be moved out of the hot path via partitioning, then dropped entirely after a long retention window (e.g. 1–3 years).
+
+The goal throughout is performance and disk efficiency: keep the live dataset to what's actually active, archive what was purchased, and eventually retire the very old.
+
+---
+
+## 🧩 Module Structure
+
+```
+Auth/        – authentication & JWT
+Users/       – user accounts & roles
+Companies/   – transport companies
+Stations/    – cities & stations
+Routes/      – external service data & fetching
+Itinaries/   – route search (BFS) & itinerary generation
+Seats/       – seat types & inventory
+Bookings/    – reservations
+```
+
+---
+
+## 🛠️ Local Setup
+
+```bash
+dotnet restore
+dotnet ef database update
+dotnet run
+```
+
+Configure the database connection and Route API URL in `appsettings.Development.json`.
